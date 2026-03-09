@@ -14,17 +14,17 @@ from datasets import load_dataset
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# --- CONFIGURATION FOR P&T TREUNO 100B ---
-# We define an architecture based on Mistral/Llama but scaled dramatically 
-# to hit approx ~100B parameters.
+# --- CONFIGURATION FOR P&T TREUNO 125M (FREE TIER) ---
+# We define an architecture based on Llama scaled down to ~125M parameters
+# so it can be trained for free on Google Colab or Kaggle.
 TREUNO_CONFIG = {
     "architectures": ["LlamaForCausalLM"],
-    "hidden_size": 10240,            # Massive hidden dimension
-    "intermediate_size": 27392,      # SwiGLU intermediate size
-    "num_hidden_layers": 72,         # 72 Layers
-    "num_attention_heads": 80,       # 80 Attention heads
-    "num_key_value_heads": 8,        # Grouped Query Attention
-    "max_position_embeddings": 8192, # Context window limit
+    "hidden_size": 768,              # Standard dimension for small models
+    "intermediate_size": 3072,       # SwiGLU intermediate size
+    "num_hidden_layers": 12,         # 12 Layers (like GPT2-Small)
+    "num_attention_heads": 12,       # 12 Attention heads
+    "num_key_value_heads": 12,       # Standard Multi-Head Attention
+    "max_position_embeddings": 2048, # 2048 Context window limit
     "rms_norm_eps": 1e-05,
     "tie_word_embeddings": False,
     "vocab_size": 32000              # Standard tokenizer vocab size
@@ -34,9 +34,9 @@ DATASET_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dataset
 # Using DeepSeek base tokenizer as placeholder, must match vocab_size in config
 TOKENIZER_NAME = "deepseek-ai/deepseek-coder-6.7b-base" 
 
-def create_treuno_100b_model():
-    """Initializes the P&T Treuno 100B model architecture completely from scratch."""
-    logging.info("Building P&T Treuno 100B architecture from scratch...")
+def create_treuno_125m_model():
+    """Initializes the P&T Treuno 125M model architecture completely from scratch."""
+    logging.info("Building P&T Treuno 125M architecture from scratch...")
     
     # Create configuration
     config = AutoConfig.for_model("llama", **TREUNO_CONFIG)
@@ -79,30 +79,27 @@ def main():
     data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False)
     
     # 3. Create Model Architecture
-    model = create_treuno_100b_model()
+    model = create_treuno_125m_model()
     
-    # 4. Configure Training Arguments (DeepSpeed integration)
-    deepspeed_config = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ds_config.json')
-    
+    # 4. Configure Training Arguments (Optimized for single 16GB GPU like T4)
     training_args = TrainingArguments(
-        output_dir="./treuno_100b_checkpoints",
+        output_dir="./treuno_125M_checkpoints",
         overwrite_output_dir=True,
         num_train_epochs=3,
-        per_device_train_batch_size=2,
-        per_device_eval_batch_size=2,
-        gradient_accumulation_steps=8,
+        per_device_train_batch_size=4,
+        per_device_eval_batch_size=4,
+        gradient_accumulation_steps=4,
         evaluation_strategy="steps",
         eval_steps=500,
         save_strategy="steps",
         save_steps=1000,
         logging_steps=100,
-        learning_rate=1.5e-4,
+        learning_rate=3e-4,
         weight_decay=0.1,
         warmup_steps=1000,
         lr_scheduler_type="cosine",
-        bf16=True, 
+        fp16=True,                         # T4 GPUs support fp16 (not bf16)
         gradient_checkpointing=True,
-        deepspeed=deepspeed_config,        # Massive model requires DeepSpeed ZERO-3
         report_to="none"                   # Change to wandb in production
     )
     
@@ -117,11 +114,11 @@ def main():
     )
     
     # 6. Begin Pre-training
-    logging.info("Starting distributed pre-training for P&T Treuno 100B...")
+    logging.info("Starting pre-training for P&T Treuno 125M...")
     trainer.train()
     
     # 7. Save final model
-    trainer.save_model("./treuno_100b_final")
+    trainer.save_model("./treuno_125M_final")
     logging.info("Pre-training complete! Model saved.")
 
 if __name__ == "__main__":
