@@ -84,7 +84,6 @@ def main():
     # 4. Configure Training Arguments (Optimized for single 16GB GPU like T4)
     training_args = TrainingArguments(
         output_dir="./treuno_125M_checkpoints",
-        overwrite_output_dir=True,
         num_train_epochs=3,
         per_device_train_batch_size=4,
         per_device_eval_batch_size=4,
