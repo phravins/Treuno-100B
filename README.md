@@ -55,3 +55,5 @@ Since the architecture is scaled down to ~125M parameters, it will easily fit on
    ```
 
 Because we removed the DeepSpeed requirement, it will natively use the PyTorch/HuggingFace Trainer and fit perfectly inside the free 16GB T4 GPU!
+
+_TREUNO-125M is an first version P&T Based model it is on under progress_
