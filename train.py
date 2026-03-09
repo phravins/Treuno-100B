@@ -88,7 +88,7 @@ def main():
         per_device_train_batch_size=4,
         per_device_eval_batch_size=4,
         gradient_accumulation_steps=4,
-        evaluation_strategy="steps",
+        eval_strategy="steps",
         eval_steps=500,
         save_strategy="steps",
         save_steps=1000,
