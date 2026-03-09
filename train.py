@@ -24,7 +24,7 @@ TREUNO_CONFIG = {
     "num_hidden_layers": 12,         # 12 Layers (like GPT2-Small)
     "num_attention_heads": 12,       # 12 Attention heads
     "num_key_value_heads": 12,       # Standard Multi-Head Attention
-    "max_position_embeddings": 2048, # 2048 Context window limit
+    "max_position_embeddings": 1024, # Free-Tier safe Context Window
     "rms_norm_eps": 1e-05,
     "tie_word_embeddings": False,
     "vocab_size": 32000              # Standard tokenizer vocab size
@@ -60,7 +60,7 @@ def get_datasets(tokenizer):
     dataset = load_dataset('json', data_files=DATASET_PATH, split='train')
     
     def tokenize_function(examples):
-        return tokenizer(examples['text'], truncation=True, max_length=8192, padding=False)
+        return tokenizer(examples['text'], truncation=True, max_length=1024, padding=False)
         
     tokenized_dataset = dataset.map(tokenize_function, batched=True, remove_columns=dataset.column_names)
     
@@ -87,9 +87,9 @@ def main():
     training_args = TrainingArguments(
         output_dir="./treuno_125M_checkpoints",
         num_train_epochs=3,
-        per_device_train_batch_size=4,
-        per_device_eval_batch_size=4,
-        gradient_accumulation_steps=4,
+        per_device_train_batch_size=1,     # Shrunk to 1 to prevent OOM
+        per_device_eval_batch_size=1,
+        gradient_accumulation_steps=16,    # Re-scaled to simulate larger batch sizes
         eval_strategy="steps",
         eval_steps=500,
         save_strategy="steps",
