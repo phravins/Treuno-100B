@@ -34,12 +34,14 @@ DATASET_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dataset
 # Using DeepSeek base tokenizer as placeholder, must match vocab_size in config
 TOKENIZER_NAME = "deepseek-ai/deepseek-coder-6.7b-base" 
 
-def create_treuno_125m_model():
+def create_treuno_125m_model(vocab_size=32000):
     """Initializes the P&T Treuno 125M model architecture completely from scratch."""
-    logging.info("Building P&T Treuno 125M architecture from scratch...")
+    logging.info(f"Building P&T Treuno 125M architecture from scratch with vocab size {vocab_size}...")
     
     # Create configuration
-    config = AutoConfig.for_model("llama", **TREUNO_CONFIG)
+    config_dict = TREUNO_CONFIG.copy()
+    config_dict["vocab_size"] = vocab_size
+    config = AutoConfig.for_model("llama", **config_dict)
     
     # Initialize randomly initialized model (NOT pre-trained)
     # When using DeepSpeed Zero-3, this will lazily initialize parameters
@@ -79,7 +81,7 @@ def main():
     data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False)
     
     # 3. Create Model Architecture
-    model = create_treuno_125m_model()
+    model = create_treuno_125m_model(vocab_size=len(tokenizer))
     
     # 4. Configure Training Arguments (Optimized for single 16GB GPU like T4)
     training_args = TrainingArguments(
