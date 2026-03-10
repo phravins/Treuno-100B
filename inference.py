@@ -45,14 +45,16 @@ def main():
             # Tokenize input
             inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
             
-            # Generate response (STRICT DETERMINISM to prevent hallucination)
+            # Generate response
             print("\nTreuno: ", end="", flush=True)
+            
+            # Streaming the output is complex, so we simply generate it and print
             outputs = model.generate(
                 **inputs,
                 max_new_tokens=150,     # How many tokens to write
-                temperature=None,       # Disabled for strict greedy decoding
-                top_p=None,
-                do_sample=False,        # Forces the AI to pick the mathematically absolute best token
+                temperature=0.7,        # Creativity (higher = more random)
+                top_p=0.9,
+                do_sample=True,
                 pad_token_id=tokenizer.eos_token_id
             )
             
